@@ -52,6 +52,7 @@ RSpec.configure do |config|
   config.render_views
 
   config.include Devise::TestHelpers, type: :controller
+  config.include ActiveSupport::Testing::TimeHelpers
   config.include SpecHelpers
   config.include Delorean
 end
