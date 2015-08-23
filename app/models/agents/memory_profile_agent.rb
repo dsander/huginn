@@ -31,6 +31,7 @@ module Agents
     def check
       require_objspace
       ObjectSpace.trace_object_allocations_start
+      full_gc
       ObjectSpace.count_objects.each do |k, v|
         create_event payload: {filter: "#{Process.pid}_#{k}", count: v}
       end
@@ -39,6 +40,7 @@ module Agents
     def receive(incoming_events)
       return unless working?
       require_objspace
+      full_gc
       io = File.open(File.join(options[:object_dump_path], file_name), 'w')
       ObjectSpace.dump_all(output: io)
     ensure
@@ -52,6 +54,28 @@ module Agents
 
     def require_objspace
       require 'objspace' unless defined?(ObjectSpace.trace_object_allocations_start)
+    end
+
+    # Taken from https://github.com/discourse/discourse/blob/586cca352d1bb2bb044442d79a6520c9b37ed1ae/lib/memory_diagnostics.rb
+    def full_gc
+      # gc start may not collect everything
+      GC.start while new_count = decreased_count(new_count)
+    end
+
+    def decreased_count(old)
+      count = count_objects
+      if !old || count < old
+        count
+      else
+        nil
+      end
+    end
+
+    def count_objects
+      i = 0
+      ObjectSpace.each_object do |obj|
+        i += 1
+      end
     end
   end
 end
