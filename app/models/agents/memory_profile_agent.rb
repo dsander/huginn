@@ -31,7 +31,9 @@ module Agents
     def check
       require_objspace
       ObjectSpace.trace_object_allocations_start
-      create_event payload: ObjectSpace.count_objects
+      ObjectSpace.count_objects.each do |k, v|
+        create_event payload: {filter: "#{Process.pid}_#{k}", count: v}
+      end
     end
 
     def receive(incoming_events)
@@ -45,7 +47,7 @@ module Agents
 
     private
     def file_name
-      "huginn-object-dump-#{Time.now.iso8601}.json"
+      "huginn-object-dump-#{Process.pid}-#{Time.now.iso8601}.json"
     end
 
     def require_objspace
