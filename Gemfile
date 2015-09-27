@@ -3,6 +3,14 @@ source 'https://rubygems.org'
 # Ruby 2.0 is the minimum requirement
 ruby ['2.0.0', RUBY_VERSION].max
 
+# Load vendored dotenv gem and .env file
+gem 'dotenv', :path => File.join(File.dirname(__FILE__), '/vendor/gems/dotenv-2.0.1')
+gem 'dotenv-rails', :path => File.join(File.dirname(__FILE__), '/vendor/gems/dotenv-2.0.1')
+$:.unshift File.join(File.dirname(__FILE__), '/vendor/gems/dotenv-2.0.1/lib')
+require 'dotenv'
+$:.shift
+Dotenv.load(File.join(File.dirname(__FILE__), '.env'))
+
 # Optional libraries.  To conserve RAM, comment out any that you don't need,
 # then run `bundle` and commit the updated Gemfile and Gemfile.lock.
 gem 'twilio-ruby', '~> 3.11.5'    # TwilioAgent
@@ -64,7 +72,6 @@ gem 'daemons', '~> 1.1.9'
 gem 'delayed_job', '~> 4.0.0'
 gem 'delayed_job_active_record', :git => 'https://github.com/cantino/delayed_job_active_record', :branch => 'configurable-reserve-sql-strategy'
 gem 'devise', '~> 3.4.0'
-gem 'dotenv-rails', '~> 2.0.1'
 gem 'em-http-request', '~> 1.1.2'
 gem 'faraday', '~> 0.9.0'
 gem 'faraday_middleware', '>= 0.10.0'
@@ -83,7 +90,6 @@ gem 'kaminari', '~> 0.16.1'
 gem 'kramdown', '~> 1.3.3'
 gem 'liquid', '~> 3.0.3'
 gem 'mini_magick'
-gem 'mysql2', '~> 0.3.16'
 gem 'multi_xml'
 gem 'nokogiri', '~> 1.6.4'
 gem 'omniauth'
@@ -136,22 +142,31 @@ gem 'tzinfo', '>= 1.2.0'	# required by rails; 1.2.0 has support for *BSD and Sol
 # Windows does not have zoneinfo files, so bundle the tzinfo-data gem.
 gem 'tzinfo-data', platforms: [:mingw, :mswin, :x64_mingw]
 
-# Introduces a scope for Heroku specific gems.
-def on_heroku
-  if ENV['ON_HEROKU'] ||
-     ENV['HEROKU_POSTGRESQL_ROSE_URL'] ||
-     ENV['HEROKU_POSTGRESQL_GOLD_URL'] ||
-     File.read(File.join(File.dirname(__FILE__), 'Procfile')) =~ /intended for Heroku/
+
+# Introduces a scope for gem loading based on a condition
+def if_true(condition)
+  if condition
     yield
   else
-    # When not on Heroku, we still want our Gemfile.lock to include
-    # Heroku specific gems, so we scope them to an unsupported
-    # platform.
+    # When not including the gems, we still want our Gemfile.lock
+    # to include them, so we scope them to an unsupported platform.
     platform :ruby_18, &proc
   end
 end
 
-on_heroku do
-  gem 'pg'
+on_heroku = ENV['ON_HEROKU'] ||
+            ENV['HEROKU_POSTGRESQL_ROSE_URL'] ||
+            ENV['HEROKU_POSTGRESQL_GOLD_URL'] ||
+            File.read(File.join(File.dirname(__FILE__), 'Procfile')) =~ /intended for Heroku/
+
+if_true(on_heroku) do
   gem 'rails_12factor', group: :production
+end
+
+if_true(on_heroku || ENV['DATABASE_ADAPTER'].strip == 'postgresql') do
+  gem 'pg', '~> 0.18.3'
+end
+
+if_true(ENV['DATABASE_ADAPTER'].strip == 'mysql2') do
+  gem 'mysql2', '~> 0.3.16'
 end
