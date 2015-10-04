@@ -2,8 +2,10 @@ class DelayedJobWorker < LongRunnable::Worker
   include LongRunnable
 
   def run
-    @dj = Delayed::Worker.new
-    @dj.start
+    AgentRunner.with_connection do
+      @dj = Delayed::Worker.new
+      @dj.start
+    end
   end
 
   def stop
