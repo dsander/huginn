@@ -1,6 +1,7 @@
 class GemfileHelper
   class << self
     def load_dotenv
+
       dotenv_dir = Dir[File.join(File.dirname(__FILE__), '../vendor/gems/dotenv-[0-9]*')].sort.last
 
       yield dotenv_dir
