@@ -173,3 +173,7 @@ end
 if_true(ENV['DATABASE_ADAPTER'].strip == 'mysql2') do
   gem 'mysql2', '~> 0.3.16'
 end
+
+if_true(ENV['DATABASE_ADAPTER'].strip == 'sqlite3') do
+  gem 'sqlite3', '~> 1.3.11'
+end
