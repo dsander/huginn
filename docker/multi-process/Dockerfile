@@ -1,12 +1,27 @@
-FROM cantino/huginn-single-process:latest
+FROM ubuntu:14.04
 MAINTAINER Andrew Cantino
+
+ADD docker/single-process/scripts/prepare /scripts/prepare
+RUN /scripts/prepare
+
+ADD docker/multi-process/scripts/standalone-packages /scripts/standalone-packages
+RUN /scripts/standalone-packages
 
 WORKDIR /app
 
-ADD scripts/standalone-packages /scripts/standalone-packages
-RUN /scripts/standalone-packages
+ADD ["Gemfile", "Gemfile.lock", "/app/"]
+ADD lib/gemfile_helper.rb /app/lib
+ADD vendor/gems /app/vendor/gems
 
-ADD scripts/init /scripts/init
+RUN chown -R huginn:huginn /app && \
+    sudo -u huginn -H echo "gem 'sqlite3', '~> 1.3.11'" >> /app/Gemfile && \
+    sudo -u huginn -H LC_ALL=en_US.UTF-8 RAILS_ENV=production ON_HEROKU=true bundle install --without test development --path vendor/bundle -j 4
+COPY . /app
+
+ADD docker/single-process/scripts/setup /scripts/setup
+RUN /scripts/setup
+
+ADD docker/multi-process/scripts/init /scripts/init
 
 VOLUME /var/lib/mysql
 
