@@ -15,10 +15,9 @@ RUN chown -R huginn:huginn /app && \
     sudo -u huginn -H LC_ALL=en_US.UTF-8 RAILS_ENV=production ON_HEROKU=true bundle install --without test development --path vendor/bundle -j 4
 COPY . /app
 
-ADD docker/single-process/scripts/setup /scripts/setup
-RUN /scripts/setup
+ADD ["docker/single-process/scripts/setup", "docker/single-process/scripts/init", "/scripts/"]
 
-ADD docker/single-process/scripts/init /scripts/init
+RUN /scripts/setup
 
 EXPOSE 3000
 
