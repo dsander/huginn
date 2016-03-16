@@ -1,0 +1,36 @@
+machine:
+  services:
+    - docker
+
+checkout:
+  post:
+    - find . -exec touch -t 201601010000 {} +
+    - for x in $(git ls-tree --full-tree --name-only -r HEAD); do touch -t $(date -d "$(git log -1 --format=%ci "${x}")" +%y%m%d%H%M.%S) "${x}"; done
+
+dependencies:
+  override:
+    - docker info
+    - docker pull dsander/huginn-single-process
+    - docker build -t dsander/huginn-single-process -f docker/single-process/Dockerfile .
+    - docker pull dsander/huginn
+    - docker build -t dsander/huginn -f docker/multi-process/Dockerfile .
+
+database:
+  override:
+    - "true"
+
+test:
+  override:
+    - "true"
+
+deployment:
+  hub:
+    branch: docker
+    commands:
+      - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
+      - docker tag dsander/huginn-single-process dsander/huginn-single-process:$CIRCLE_SHA1
+      - docker push dsander/huginn-single-process
+      - docker push dsander/huginn-single-process:$CIRCLE_SHA1
+      - docker tag dsander/huginn dsander/huginn:$CIRCLE_SHA1
+      - docker push dsander/huginn
+      - docker push dsander/huginn:$CIRCLE_SHA1
