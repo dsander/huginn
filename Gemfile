@@ -192,3 +192,4 @@ end
 if_true(ENV['DATABASE_ADAPTER'].strip == 'mysql2') do
   gem 'mysql2', '~> 0.3.20'
 end
+gem 'huginn_nlp_agents', git: 'https://github.com/kreuzwerker/DKT.huginn_nlp_agents'
