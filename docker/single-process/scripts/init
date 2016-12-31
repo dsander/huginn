@@ -33,7 +33,15 @@ eval "echo RAILS_LOG_TO_STDOUT=true" >> .env
 eval "echo RAILS_SERVE_STATIC_FILES=true" >> .env
 
 chmod ugo+r /app/.env
+
+set +e
 source /app/.env
+if [ $? -ne 0 ]; then
+  echo "Invalid or un-escaped characters in .env:"
+  cat .env
+  exit 1
+fi
+set -e
 
 # use default port number if it is still not set
 case "${DATABASE_ADAPTER}" in
