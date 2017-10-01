@@ -4,9 +4,9 @@ set -ev
 docker pull $DOCKER_IMAGE
 
 if [[ $DOCKER_IMAGE =~ "cantino" ]]; then
-  bin/docker_wrapper build --build-arg OUTDATED_DOCKER_IMAGE_NAMESPACE='true' -t $DOCKER_IMAGE -f $DOCKERFILE .
+  build --build-arg OUTDATED_DOCKER_IMAGE_NAMESPACE='true' -t $DOCKER_IMAGE -f $DOCKERFILE .
 else
-  bin/docker_wrapper build -t $DOCKER_IMAGE -f $DOCKERFILE .
+  build -t $DOCKER_IMAGE -f $DOCKERFILE .
 fi
 
 if [[ -n "${DOCKER_USER}" && "${TRAVIS_PULL_REQUEST}" = 'false' && "${TRAVIS_BRANCH}" = "master" ]]; then
