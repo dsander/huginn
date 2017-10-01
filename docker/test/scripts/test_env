@@ -5,6 +5,9 @@ set -e
 source /app/.env
 
 export RAILS_ENV=test
+export HOME=/tmp
+unset no_proxy
+
 bundle install --with test development --path vendor/bundle -j 4
 bundle exec rake db:create db:migrate
 bundle exec "$@"
