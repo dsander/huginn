@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 $stdout.sync = true
 
 Huginn::Application.configure do
@@ -55,7 +57,7 @@ Huginn::Application.configure do
   # Suppress logger output for asset requests.
   config.assets.quiet = true
 
-  config.action_mailer.default_url_options = { :host => ENV['DOMAIN'] }
+  config.action_mailer.default_url_options = { host: ENV['DOMAIN'] }
   config.action_mailer.asset_host = ENV['DOMAIN']
   config.action_mailer.raise_delivery_errors = true
   if ENV['SEND_EMAIL_IN_DEVELOPMENT'] == 'true'

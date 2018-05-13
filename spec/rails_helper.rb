@@ -1,4 +1,6 @@
-ENV["RAILS_ENV"] ||= 'test'
+# frozen_string_literal: true
+
+ENV['RAILS_ENV'] ||= 'test'
 
 if ENV['COVERAGE']
   require 'simplecov'
@@ -8,7 +10,7 @@ else
   Coveralls.wear!('rails')
 end
 
-require File.expand_path("../../config/environment", __FILE__)
+require File.expand_path('../config/environment', __dir__)
 require 'rspec/rails'
 require 'rr'
 require 'webmock/rspec'
@@ -17,7 +19,7 @@ WebMock.disable_net_connect!(allow_localhost: true)
 
 # Requires supporting ruby files with custom matchers and macros, etc,
 # in spec/support/ and its subdirectories.
-Dir[Rails.root.join("spec/support/**/*.rb")].each { |f| require f }
+Dir[Rails.root.join('spec/support/**/*.rb')].each { |f| require f }
 
 ActiveRecord::Migration.maintain_test_schema!
 
@@ -61,18 +63,16 @@ RSpec.configure do |config|
   # order dependency and want to debug it, you can fix the order by providing
   # the seed, which is printed after each run.
   #     --seed 1234
-  config.order = "random"
+  config.order = 'random'
   config.global_fixtures = :all
 
   config.render_views
 
-  config.example_status_persistence_file_path = "./spec/examples.txt"
+  config.example_status_persistence_file_path = './spec/examples.txt'
 
   config.include Devise::Test::ControllerHelpers, type: :controller
   config.include SpecHelpers
   config.include Delorean
 end
 
-if ENV['RSPEC_TASK'] != 'spec:nofeatures'
-  require 'capybara_helper'
-end
+require 'capybara_helper' if ENV['RSPEC_TASK'] != 'spec:nofeatures'

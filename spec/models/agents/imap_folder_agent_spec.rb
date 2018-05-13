@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'rails_helper'
 require 'time'
 
@@ -15,21 +17,21 @@ describe Agents::ImapFolderAgent do
       false
     end
 
-    def body_parts(mime_types = %[text/plain text/enriched text/html])
-      mime_types.map { |type|
-        all_parts.find { |part|
+    def body_parts(mime_types = %(text/plain text/enriched text/html))
+      mime_types.map do |type|
+        all_parts.find do |part|
           part.mime_type == type
-        }
-      }.compact.map! { |part|
+        end
+      end.compact.map! do |part|
         part.extend(Agents::ImapFolderAgent::Message::Scrubbed)
-      }
+      end
     end
 
     include Agents::ImapFolderAgent::Message::Scrubbed
   end
 
   describe 'checking IMAP' do
-    let(:valid_options) {
+    let(:valid_options) do
       {
         'expected_update_period_in_days' => 1,
         'host' => 'mail.example.net',
@@ -40,25 +42,25 @@ describe Agents::ImapFolderAgent do
         'conditions' => {
         }
       }
-    }
+    end
 
-    let(:mails) {
+    let(:mails) do
       [
-        Mail.read(Rails.root.join('spec/data_fixtures/imap1.eml')).tap { |mail|
+        Mail.read(Rails.root.join('spec/data_fixtures/imap1.eml')).tap do |mail|
           mail.extend(MessageMixin)
           stub(mail).uid.returns(1)
           stub(mail).raw_mail.returns(mail.encoded)
-        },
-        Mail.read(Rails.root.join('spec/data_fixtures/imap2.eml')).tap { |mail|
+        end,
+        Mail.read(Rails.root.join('spec/data_fixtures/imap2.eml')).tap do |mail|
           mail.extend(MessageMixin)
           stub(mail).uid.returns(2)
           stub(mail).has_attachment?.returns(true)
           stub(mail).raw_mail.returns(mail.encoded)
-        },
+        end
       ]
-    }
+    end
 
-    let(:expected_payloads) {
+    let(:expected_payloads) do
       [
         {
           'message_id' => 'foo.123@mail.example.jp',
@@ -71,7 +73,7 @@ describe Agents::ImapFolderAgent do
           'body' => "Some plain text\nSome second line\n",
           'has_attachment' => false,
           'matches' => {},
-          'mime_type' => 'text/plain',
+          'mime_type' => 'text/plain'
         },
         {
           'message_id' => 'bar.456@mail.example.com',
@@ -84,27 +86,27 @@ describe Agents::ImapFolderAgent do
           'date' => '2014-05-09T17:00:00+09:00',
           'has_attachment' => true,
           'matches' => {},
-          'mime_type' => 'text/plain',
+          'mime_type' => 'text/plain'
         }
       ]
-    }
+    end
 
     before do
       @checker = Agents::ImapFolderAgent.new(name: 'Example', options: valid_options, keep_events_for: 2.days)
       @checker.user = users(:bob)
       @checker.save!
 
-      stub(@checker).each_unread_mail.returns { |yielder|
+      stub(@checker).each_unread_mail.returns do |yielder|
         seen = @checker.lastseen
         notified = @checker.notified
-        mails.each_with_object(notified) { |mail|
+        mails.each_with_object(notified) do |mail|
           yielder[mail, notified]
           seen[mail.uidvalidity] = mail.uid
-        }
+        end
         @checker.lastseen = seen
         @checker.notified = notified
         nil
-      }
+      end
     end
 
     describe 'validations' do
@@ -171,9 +173,9 @@ describe Agents::ImapFolderAgent do
       it 'should check for mails and save memory' do
         expect { @checker.check }.to change { Event.count }.by(2)
         expect(@checker.notified.sort).to eq(mails.map(&:message_id).sort)
-        expect(@checker.lastseen).to eq(mails.each_with_object(@checker.make_seen) { |mail, seen|
+        expect(@checker.lastseen).to eq(mails.each_with_object(@checker.make_seen) do |mail, seen|
           seen[mail.uidvalidity] = mail.uid
-        })
+        end)
 
         expect(Event.last(2).map(&:payload)).to eq expected_payloads
 
@@ -185,9 +187,9 @@ describe Agents::ImapFolderAgent do
 
         expect { @checker.check }.to change { Event.count }.by(1)
         expect(@checker.notified.sort).to eq([mails.first.message_id])
-        expect(@checker.lastseen).to eq(mails.each_with_object(@checker.make_seen) { |mail, seen|
+        expect(@checker.lastseen).to eq(mails.each_with_object(@checker.make_seen) do |mail, seen|
           seen[mail.uidvalidity] = mail.uid
-        })
+        end)
 
         expect(Event.last.payload).to eq(expected_payloads.first)
 
@@ -197,27 +199,27 @@ describe Agents::ImapFolderAgent do
       it 'should not fail when a condition on Cc is given and a mail does not have the field' do
         @checker.options['conditions']['cc'] = 'John.Doe@*'
 
-        expect {
+        expect do
           expect { @checker.check }.not_to change { Event.count }
-        }.not_to raise_exception
+        end.not_to raise_exception
       end
 
       it 'should perform regexp matching and save named captures' do
         @checker.options['conditions'].update(
           'subject' => '\ARe: (?<a>.+)',
-          'body'    => 'Some (?<b>.+) reply',
+          'body'    => 'Some (?<b>.+) reply'
         )
 
         expect { @checker.check }.to change { Event.count }.by(1)
         expect(@checker.notified.sort).to eq([mails.last.message_id])
-        expect(@checker.lastseen).to eq(mails.each_with_object(@checker.make_seen) { |mail, seen|
+        expect(@checker.lastseen).to eq(mails.each_with_object(@checker.make_seen) do |mail, seen|
           seen[mail.uidvalidity] = mail.uid
-        })
+        end)
 
         expect(Event.last.payload).to eq(expected_payloads.last.update(
-          'body' => "<div dir=\"ltr\">Some HTML reply<br></div>\r\n",
-          'matches' => { 'a' => 'some subject', 'b' => 'HTML' },
-          'mime_type' => 'text/html',
+                                           'body' => "<div dir=\"ltr\">Some HTML reply<br></div>\r\n",
+                                           'matches' => { 'a' => 'some subject', 'b' => 'HTML' },
+                                           'mime_type' => 'text/html'
         ))
 
         expect { @checker.check }.not_to change { Event.count }
@@ -243,37 +245,37 @@ describe Agents::ImapFolderAgent do
         @checker.options['mime_types'] = %w[text/plain]
         @checker.options['conditions'].update(
           'subject' => '\ARe: (?<a>.+)',
-          'body'    => 'Some (?<b>.+) reply',
+          'body'    => 'Some (?<b>.+) reply'
         )
 
         expect { @checker.check }.not_to change { Event.count }
         expect(@checker.notified.sort).to eq([])
-        expect(@checker.lastseen).to eq(mails.each_with_object(@checker.make_seen) { |mail, seen|
+        expect(@checker.lastseen).to eq(mails.each_with_object(@checker.make_seen) do |mail, seen|
           seen[mail.uidvalidity] = mail.uid
-        })
+        end)
       end
 
       it 'should never mark mails as read unless mark_as_read is true' do
-        mails.each { |mail|
+        mails.each do |mail|
           stub(mail).mark_as_read.never
-        }
+        end
         expect { @checker.check }.to change { Event.count }.by(2)
       end
 
       it 'should mark mails as read if mark_as_read is true' do
         @checker.options['mark_as_read'] = true
-        mails.each { |mail|
+        mails.each do |mail|
           stub(mail).mark_as_read.once
-        }
+        end
         expect { @checker.check }.to change { Event.count }.by(2)
       end
 
       it 'should create just one event for multiple mails with the same Message-Id' do
         mails.first.message_id = mails.last.message_id
         @checker.options['mark_as_read'] = true
-        mails.each { |mail|
+        mails.each do |mail|
           stub(mail).mark_as_read.once
-        }
+        end
         expect { @checker.check }.to change { Event.count }.by(1)
       end
 
@@ -289,9 +291,9 @@ describe Agents::ImapFolderAgent do
         it 'should ignore them without failing if a "from" condition is given' do
           @checker.options['conditions']['from'] = '*'
 
-          expect {
+          expect do
             expect { @checker.check }.not_to change { Event.count }
-          }.not_to raise_exception
+          end.not_to raise_exception
         end
       end
 
@@ -304,9 +306,9 @@ describe Agents::ImapFolderAgent do
         it 'should check for mails and emit events with raw_mail' do
           expect { @checker.check }.to change { Event.count }.by(2)
           expect(@checker.notified.sort).to eq(mails.map(&:message_id).sort)
-          expect(@checker.lastseen).to eq(mails.each_with_object(@checker.make_seen) { |mail, seen|
-              seen[mail.uidvalidity] = mail.uid
-            })
+          expect(@checker.lastseen).to eq(mails.each_with_object(@checker.make_seen) do |mail, seen|
+                                            seen[mail.uidvalidity] = mail.uid
+                                          end)
 
           expect(Event.last(2).map(&:payload)).to eq expected_payloads.map.with_index { |payload, i|
             payload.merge('raw_mail' => mails[i].encoded)
@@ -337,8 +339,8 @@ describe Agents::ImapFolderAgent do
 
     describe '#scrubbed' do
       it 'should return a scrubbed string' do
-        expect(@object.scrubbed(:subject)).to eq("broken<b7>subject<b6>")
-        expect(@object.scrubbed(:body)).to eq("broken<b7>body<b6>")
+        expect(@object.scrubbed(:subject)).to eq('broken<b7>subject<b6>')
+        expect(@object.scrubbed(:body)).to eq('broken<b7>body<b6>')
       end
     end
   end

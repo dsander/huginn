@@ -1,16 +1,16 @@
+# frozen_string_literal: true
+
 require 'time_tracker'
 
 module Agents
-
   class HttpStatusAgent < Agent
-
     include WebRequestConcern
     include FormConfigurable
 
     can_dry_run!
     can_order_created_events!
 
-    default_schedule "every_12h"
+    default_schedule 'every_12h'
 
     form_configurable :url
     form_configurable :disable_redirect_follow, type: :boolean
@@ -46,13 +46,13 @@ module Agents
 
     def default_options
       {
-        'url' => "http://google.com",
-        'disable_redirect_follow' => "true",
+        'url' => 'http://google.com',
+        'disable_redirect_follow' => 'true'
       }
     end
 
     def validate_options
-      errors.add(:base, "a url must be specified") unless options['url'].present?
+      errors.add(:base, 'a url must be specified') unless options['url'].present?
     end
 
     def header_array(str)
@@ -86,11 +86,11 @@ module Agents
       # Deal with failures
       if measured_result.result
         final_url = boolify(interpolated['disable_redirect_follow']) ? url : measured_result.result.env.url.to_s
-        payload.merge!({ 'final_url' => final_url, 'redirected' => (url != final_url), 'response_received' => true, 'status' => current_status })
+        payload.merge!('final_url' => final_url, 'redirected' => (url != final_url), 'response_received' => true, 'status' => current_status)
         # Deal with headers
         if local_headers.present?
           header_results = local_headers.each_with_object({}) { |header, hash| hash[header] = measured_result.result.headers[header] }
-          payload.merge!({ 'headers' => header_results })
+          payload['headers'] = header_results
         end
         create_event payload: payload
         memory['last_status'] = measured_result.status.to_s
@@ -98,15 +98,13 @@ module Agents
         create_event payload: payload
         memory['last_status'] = nil
       end
-
     end
 
     def ping(url)
       result = faraday.get url
       result.status > 0 ? result : nil
-    rescue
+    rescue StandardError
       nil
     end
   end
-
 end
